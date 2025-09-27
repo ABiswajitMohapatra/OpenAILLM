@@ -13,7 +13,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
-# --- Custom Embedding class (stubbed for LlamaIndex) ---
+# --- Custom Embedding class (stub) ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
@@ -22,7 +22,7 @@ class CustomEmbedding(BaseEmbedding):
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
-# --- Document loader ---
+# --- Load documents ---
 def load_documents():
     folder = "Sanjukta"
     if os.path.exists(folder):
@@ -31,7 +31,7 @@ def load_documents():
         print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
         return []
 
-# --- Create or load LlamaIndex ---
+# --- Create or load index ---
 def create_or_load_index():
     index_file = "index.pkl"
     if os.path.exists(index_file):
@@ -45,7 +45,7 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
-# --- Query OpenAI API using new 1.0+ syntax ---
+# --- Query OpenAI API (1.0+ syntax) ---
 def query_openai_api(prompt: str):
     try:
         response = openai.chat.completions.create(
@@ -60,7 +60,7 @@ def query_openai_api(prompt: str):
             return "⚛ Sorry, the API rate limit has been reached. Please try again later."
         return f"⚛ An unexpected error occurred: {err_msg}"
 
-# --- Summarize old messages ---
+# --- Summarize previous messages ---
 def summarize_messages(messages):
     text = ""
     for msg in messages:
@@ -72,7 +72,7 @@ def summarize_messages(messages):
 def rag_retrieve(query: str) -> list[str]:
     return []
 
-# --- Main chat function ---
+# --- Chat with agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -96,13 +96,16 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
 
     for msg in recent_messages:
         conversation_text += f"{msg['role']}: {msg['message']}\n"
-    conversation_text += f"User: {query}\n"
+    conversation_text += f"User: {query}\nNote: Provide a **detailed explanation** with headings, subheadings, examples, and context like BiswaLex AI.\n"
 
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context."
+        "Answer the user's last query in context. Provide a **structured, detailed response** "
+        "with headings, subheadings, and examples wherever appropriate. "
+        "Use a friendly and explanatory tone."
     )
+
     return query_openai_api(prompt)
 
 # --- PDF text extraction ---
