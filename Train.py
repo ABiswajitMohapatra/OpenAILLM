@@ -96,21 +96,23 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- Adaptive response prompt ---
+    # --- Dynamic answer depth instructions ---
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Instruction for AI:\n"
-        "1. Understand the user's query and its context.\n"
-        "2. Automatically decide how detailed the answer should be.\n"
-        "   - If the query is simple or factual, provide a concise answer.\n"
-        "   - If the query is conceptual, technical, or requires explanation, provide a detailed answer "
-        "     with headings, subheadings, examples, and context.\n"
-        "3. Respond naturally, clearly, and accurately.\n"
-        "4. Avoid repeating or generic text. Answer the user's last query only."
+        "Instructions for AI:\n"
+        "1. Analyze the user's query carefully.\n"
+        "2. Decide automatically how detailed the response should be:\n"
+        "   - For simple factual queries, provide concise answers.\n"
+        "   - For conceptual, technical, or code-related queries, provide full, structured, detailed answers with examples.\n"
+        "3. For code queries, provide complete, working code with explanation.\n"
+        "4. Only respond to the user's last query; do not summarize unless asked.\n"
+        "5. Avoid generic or repetitive phrases; focus on clarity and usefulness.\n"
+        f"Answer the user's query now: {query}"
     )
 
-    return query_openai_api(prompt)
+    return query_groq_api(prompt)
+
 
 # --- PDF text extraction ---
 def extract_text_from_pdf(file):
@@ -124,6 +126,7 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
 
 
 
