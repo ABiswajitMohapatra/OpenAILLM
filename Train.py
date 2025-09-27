@@ -95,10 +95,10 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text = ""
 
     for msg in recent_messages:
-        conversation_text += f"{msg['role']}: {msg['message']}\n"
-    conversation_text += f"User: {query}\n"
+        role_emoji = "⚛" if msg['role'] == "AI" else "🧑‍🔬"
+        conversation_text += f"{role_emoji}: {msg['message']}\n"
+    conversation_text += f"🧑‍🔬: {query}\n"
 
-    # --- GPT-style dynamic response instructions ---
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
@@ -127,3 +127,4 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image).strip()
+
