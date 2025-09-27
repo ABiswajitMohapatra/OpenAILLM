@@ -9,9 +9,11 @@ from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
+# --- Load API key from environment ---
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
+# --- Custom Embedding class (stubbed for LlamaIndex) ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
@@ -20,6 +22,7 @@ class CustomEmbedding(BaseEmbedding):
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
+# --- Document loader ---
 def load_documents():
     folder = "Sanjukta"
     if os.path.exists(folder):
@@ -28,6 +31,7 @@ def load_documents():
         print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
         return []
 
+# --- Create or load LlamaIndex ---
 def create_or_load_index():
     index_file = "index.pkl"
     if os.path.exists(index_file):
@@ -41,9 +45,10 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
+# --- Query OpenAI API using new 1.0+ syntax ---
 def query_openai_api(prompt: str):
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7
@@ -52,9 +57,10 @@ def query_openai_api(prompt: str):
     except Exception as e:
         err_msg = str(e)
         if "RateLimit" in err_msg:
-            return "⚛ Sorry, the API rate limit has been reached. Please try again in a few moments."
+            return "⚛ Sorry, the API rate limit has been reached. Please try again later."
         return f"⚛ An unexpected error occurred: {err_msg}"
 
+# --- Summarize old messages ---
 def summarize_messages(messages):
     text = ""
     for msg in messages:
@@ -62,9 +68,11 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_openai_api(prompt)
 
+# --- Stub RAG retrieval ---
 def rag_retrieve(query: str) -> list[str]:
     return []
 
+# --- Main chat function ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -85,6 +93,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     else:
         recent_messages = chat_history
         conversation_text = ""
+
     for msg in recent_messages:
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
@@ -96,6 +105,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     )
     return query_openai_api(prompt)
 
+# --- PDF text extraction ---
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -103,6 +113,7 @@ def extract_text_from_pdf(file):
             text += page.extract_text() or ""
     return text.strip()
 
+# --- Image OCR extraction ---
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
