@@ -75,6 +75,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     rag_context = "\n".join(rag_retrieve(query))
     full_context = context + "\n" + rag_context if rag_context else context
 
+    # Summarize older conversation if needed
     if len(chat_history) > memory_limit:
         old_msgs = chat_history[:-memory_limit]
         recent_msgs = chat_history[-memory_limit:]
@@ -91,17 +92,17 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
 
     prompt = (
         f"Context: {full_context}\n"
-        f"Conversation so far:\n{conversation_text}\n"
+        f"Conversation:\n{conversation_text}\n"
         "Instructions for AI:\n"
-        "1. Understand the query fully.\n"
-        "2. Automatically decide response depth:\n"
-        "   - Short/factual → concise answer.\n"
-        "   - Conceptual/technical/code → detailed structured answer.\n"
-        "3. Include headings, examples, explanations if relevant.\n"
-        "4. Provide full working code if programming question.\n"
-        "5. Only answer the last user query.\n"
+        "1. Respond only once using ⚛ emoji.\n"
+        "2. For factual queries, give concise, direct answers.\n"
+        "3. For conceptual, technical, or coding queries, provide structured answers with headings, bullets, examples, and full working code if applicable.\n"
+        "4. Do NOT include the user's emoji or role inside your response.\n"
+        "5. Avoid repeated prefixes or unnecessary text.\n"
+        "6. Only answer the last user query.\n"
     )
     return query_openai_api(prompt)
+
 
 # --- PDF text extraction ---
 def extract_text_from_pdf(file):
@@ -115,3 +116,4 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image).strip()
+
