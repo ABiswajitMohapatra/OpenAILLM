@@ -1,5 +1,5 @@
 import streamlit as st
-from model import load_documents, create_or_load_index, chat_with_agent
+from Train import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
 
@@ -106,3 +106,4 @@ if st.sidebar.button("Save Session"):
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
 st.sidebar.markdown("<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>", unsafe_allow_html=True)
+
