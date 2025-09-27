@@ -3,7 +3,7 @@ from Train import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
 
-st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
+st.set_page_config(page_title="BiswaLLM", page_icon="⚛", layout="wide")
 
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
@@ -106,4 +106,5 @@ if st.sidebar.button("Save Session"):
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
 st.sidebar.markdown("<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>", unsafe_allow_html=True)
+
 
