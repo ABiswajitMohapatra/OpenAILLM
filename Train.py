@@ -96,23 +96,21 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- Dynamic answer depth instructions ---
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
         "Instructions for AI:\n"
         "1. Analyze the user's query carefully.\n"
-        "2. Decide automatically how detailed the response should be:\n"
-        "   - For simple factual queries, provide concise answers.\n"
-        "   - For conceptual, technical, or code-related queries, provide full, structured, detailed answers with examples.\n"
-        "3. For code queries, provide complete, working code with explanation.\n"
-        "4. Only respond to the user's last query; do not summarize unless asked.\n"
-        "5. Avoid generic or repetitive phrases; focus on clarity and usefulness.\n"
-        f"Answer the user's query now: {query}"
+        "2. Automatically decide how detailed the response should be:\n"
+        "   - If the query is simple or factual, give a short and precise answer.\n"
+        "   - If the query is conceptual, technical, or asks for explanation or code, give a full, detailed, structured answer.\n"
+        "3. For code-related queries, provide complete, working code with explanation.\n"
+        "4. For conceptual queries, include headings, subheadings, examples, and context as needed.\n"
+        "5. Avoid repeating or generic phrases; focus on answering the user's query clearly.\n"
+        "6. Only respond to the last query; do not summarize unless asked.\n"
     )
 
-    return query_groq_api(prompt)
-
+    return query_openai_api(prompt)
 
 # --- PDF text extraction ---
 def extract_text_from_pdf(file):
@@ -126,6 +124,7 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
 
 
 
