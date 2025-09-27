@@ -95,7 +95,9 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         "Answer the user's last query in context."
     )
 
-    return query_groq_api(prompt)
+    # ✅ Use OpenAI API, not Groq
+    return query_openai_api(prompt)
+
 # --- PDF text extraction ---
 def extract_text_from_pdf(file):
     text = ""
@@ -108,6 +110,7 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image).strip()
+
 
 
 
