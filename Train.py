@@ -64,37 +64,35 @@ def summarize_messages(messages):
 def rag_retrieve(query: str) -> list[str]:
     return []
 
-def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
+def converse_with_ai(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
-    context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
-    
+    context_text = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
+
     if extra_file_content:
-        context += f"\nAdditional context:\n{extra_file_content}"
+        context_text += f"\nAdditional context from uploaded file:\n{extra_file_content}"
 
-    rag_context = "\n".join(rag_retrieve(query))
-    full_context = context + "\n" + rag_context if rag_context else context
+    rag_results = rag_retrieve(query)
+    rag_text = "\n".join(rag_results)
+    full_context = context_text + "\n" + rag_text if rag_text else context_text
 
-    # Keep only text in conversation, remove emojis
     if len(chat_history) > memory_limit:
         old_msgs = chat_history[:-memory_limit]
         recent_msgs = chat_history[-memory_limit:]
-        summary = summarize_messages(old_msgs)
-        conversation_text = f"Summary of previous conversation: {summary}\n"
+        summary_text = summarize_messages(old_msgs)
+        conversation_history = f"Summary of previous conversation: {summary_text}\n"
     else:
         recent_msgs = chat_history
-        conversation_text = ""
+        conversation_history = ""
 
     for msg in recent_msgs:
-        role_text = msg['message']
-        conversation_text += f"{role_text}\n"
+        conversation_history += f"{msg['message']}\n"
 
-    # Only user text for last query
-    conversation_text += f"{query}\n"
+    conversation_history += f"{query}\n"
 
-    prompt = (
-        f"Context: {full_context}\n"
-        f"Conversation:\n{conversation_text}\n"
+    prompt_text = (
+        f"Context from documents and files: {full_context}\n"
+        f"Conversation so far:\n{conversation_history}\n"
         "Instructions for AI:\n"
         "1. Respond only once using ⚛ emoji.\n"
         "2. Do NOT include user emojis or repeat user text.\n"
@@ -104,9 +102,9 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         "6. Only answer the last user query.\n"
     )
 
-    answer = query_openai_api(prompt)
-    # Add AI emoji manually at the start
+    answer = query_openai_api(prompt_text)
     return f"⚛ {answer.strip()}"
+
 
 
 # --- PDF text extraction ---
@@ -121,5 +119,6 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image).strip()
+
 
 
