@@ -96,17 +96,18 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- Adaptive response instruction ---
-    # Ask the model to generate responses based on query complexity
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Instruction for AI: Analyze the user's query carefully. "
-        "If it is asking for a factual answer or abbreviation, give a short and precise response. "
-        "If it is asking for an explanation, concept, or technical topic, give a detailed, structured, and clear answer "
-        "with headings, subheadings, examples, and context when necessary. "
-        "Always prioritize relevance and clarity over length. "
-        "Provide the best possible answer for the user's query."
+        "Instruction for AI:\n"
+        "1. Read the user's query carefully.\n"
+        "2. Determine how detailed the answer should be based on the query and context.\n"
+        "   - If the query is a simple factual question, provide a concise and clear answer.\n"
+        "   - If the query is conceptual, technical, or requires explanation, provide a detailed answer "
+        "     with headings, examples, and context.\n"
+        "3. Respond naturally and conversationally.\n"
+        "4. Always ensure accuracy, clarity, and relevance.\n"
+        "Answer the user's last query only."
     )
 
     return query_openai_api(prompt)
@@ -124,4 +125,5 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
 
