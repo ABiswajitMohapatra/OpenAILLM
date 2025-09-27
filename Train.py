@@ -13,7 +13,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
-# --- Custom Embedding class (stub) ---
+# --- Custom Embedding class ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
@@ -45,7 +45,7 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
-# --- Query OpenAI API (1.0+ syntax) ---
+# --- Query OpenAI API ---
 def query_openai_api(prompt: str):
     try:
         response = openai.chat.completions.create(
@@ -68,9 +68,11 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_openai_api(prompt)
 
-# --- Stub RAG retrieval ---
+# --- RAG retrieval stub ---
 def rag_retrieve(query: str) -> list[str]:
     return []
+
+# --- Chat agent with GPT-style dynamic responses ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -96,18 +98,19 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
+    # --- GPT-style dynamic response instructions ---
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
         "Instructions for AI:\n"
-        "1. Analyze the user's query carefully.\n"
-        "2. Automatically decide how detailed the response should be:\n"
-        "   - If the query is simple or factual, give a short and precise answer.\n"
-        "   - If the query is conceptual, technical, or asks for explanation or code, give a full, detailed, structured answer.\n"
-        "3. For code-related queries, provide complete, working code with explanation.\n"
-        "4. For conceptual queries, include headings, subheadings, examples, and context as needed.\n"
-        "5. Avoid repeating or generic phrases; focus on answering the user's query clearly.\n"
-        "6. Only respond to the last query; do not summarize unless asked.\n"
+        "1. Understand the user's query and context.\n"
+        "2. Automatically decide response length and depth:\n"
+        "   - Short, factual queries → concise answer.\n"
+        "   - Conceptual, technical, or code queries → detailed, structured answer.\n"
+        "3. Include headings, subheadings, examples, and explanations where relevant.\n"
+        "4. Provide fully working code if the query is about programming.\n"
+        "5. Avoid generic replies; focus on clarity and usefulness.\n"
+        "6. Only respond to the user's last query unless explicitly asked to summarize.\n"
     )
 
     return query_openai_api(prompt)
@@ -123,9 +126,4 @@ def extract_text_from_pdf(file):
 # --- Image OCR extraction ---
 def extract_text_from_image(file):
     image = Image.open(file)
-    return pytesseract.image_to_string(image)
-
-
-
-
-
+    return pytesseract.image_to_string(image).strip()
