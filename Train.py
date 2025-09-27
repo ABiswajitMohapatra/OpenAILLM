@@ -9,11 +9,11 @@ from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
-# --- Load API key from environment ---
+# --- Load API key ---
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
-# --- Custom Embedding class ---
+# --- Custom Embedding ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
@@ -27,25 +27,21 @@ def load_documents():
     folder = "Sanjukta"
     if os.path.exists(folder):
         return SimpleDirectoryReader(folder).load_data()
-    else:
-        print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
-        return []
+    return []
 
-# --- Create or load index ---
+# --- Create/load index ---
 def create_or_load_index():
     index_file = "index.pkl"
     if os.path.exists(index_file):
         with open(index_file, "rb") as f:
-            index = pickle.load(f)
-    else:
-        docs = load_documents()
-        embedding_model = CustomEmbedding()
-        index = VectorStoreIndex(docs, embed_model=embedding_model)
-        with open(index_file, "wb") as f:
-            pickle.dump(index, f)
+            return pickle.load(f)
+    docs = load_documents()
+    index = VectorStoreIndex(docs, embed_model=CustomEmbedding())
+    with open(index_file, "wb") as f:
+        pickle.dump(index, f)
     return index
 
-# --- Query OpenAI API ---
+# --- Query OpenAI ---
 def query_openai_api(prompt: str):
     try:
         response = openai.chat.completions.create(
@@ -55,64 +51,56 @@ def query_openai_api(prompt: str):
         )
         return response.choices[0].message.content
     except Exception as e:
-        err_msg = str(e)
-        if "RateLimit" in err_msg:
-            return "⚛ Sorry, the API rate limit has been reached. Please try again later."
-        return f"⚛ An unexpected error occurred: {err_msg}"
+        if "RateLimit" in str(e):
+            return "⚛ API rate limit reached. Try again later."
+        return f"⚛ Unexpected error: {str(e)}"
 
 # --- Summarize previous messages ---
 def summarize_messages(messages):
-    text = ""
-    for msg in messages:
-        text += f"{msg['role']}: {msg['message']}\n"
-    prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
-    return query_openai_api(prompt)
+    text = "\n".join([f"{msg['role']}: {msg['message']}" for msg in messages])
+    return query_openai_api(f"Summarize concisely:\n{text}\nSummary:")
 
 # --- RAG retrieval stub ---
 def rag_retrieve(query: str) -> list[str]:
     return []
 
-# --- Chat agent with GPT-style dynamic responses ---
+# --- Chat agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
-
     if extra_file_content:
-        context += f"\nAdditional context from uploaded file:\n{extra_file_content}"
+        context += f"\nAdditional context:\n{extra_file_content}"
 
-    rag_results = rag_retrieve(query)
-    rag_context = "\n".join(rag_results)
+    rag_context = "\n".join(rag_retrieve(query))
     full_context = context + "\n" + rag_context if rag_context else context
 
     if len(chat_history) > memory_limit:
-        old_messages = chat_history[:-memory_limit]
-        recent_messages = chat_history[-memory_limit:]
-        summary = summarize_messages(old_messages)
+        old_msgs = chat_history[:-memory_limit]
+        recent_msgs = chat_history[-memory_limit:]
+        summary = summarize_messages(old_msgs)
         conversation_text = f"Summary of previous conversation: {summary}\n"
     else:
-        recent_messages = chat_history
+        recent_msgs = chat_history
         conversation_text = ""
 
-    for msg in recent_messages:
-        role_emoji = "⚛" if msg['role'] == "AI" else "🧑‍🔬"
+    for msg in recent_msgs:
+        role_emoji = "⚛" if msg['role'] == "Agent" else "🧑‍🔬"
         conversation_text += f"{role_emoji}: {msg['message']}\n"
     conversation_text += f"🧑‍🔬: {query}\n"
 
     prompt = (
-        f"Context from documents and files: {full_context}\n"
+        f"Context: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
         "Instructions for AI:\n"
-        "1. Understand the user's query and context.\n"
-        "2. Automatically decide response length and depth:\n"
-        "   - Short, factual queries → concise answer.\n"
-        "   - Conceptual, technical, or code queries → detailed, structured answer.\n"
-        "3. Include headings, subheadings, examples, and explanations where relevant.\n"
-        "4. Provide fully working code if the query is about programming.\n"
-        "5. Avoid generic replies; focus on clarity and usefulness.\n"
-        "6. Only respond to the user's last query unless explicitly asked to summarize.\n"
+        "1. Understand the query fully.\n"
+        "2. Automatically decide response depth:\n"
+        "   - Short/factual → concise answer.\n"
+        "   - Conceptual/technical/code → detailed structured answer.\n"
+        "3. Include headings, examples, explanations if relevant.\n"
+        "4. Provide full working code if programming question.\n"
+        "5. Only answer the last user query.\n"
     )
-
     return query_openai_api(prompt)
 
 # --- PDF text extraction ---
@@ -123,8 +111,7 @@ def extract_text_from_pdf(file):
             text += page.extract_text() or ""
     return text.strip()
 
-# --- Image OCR extraction ---
+# --- Image OCR ---
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image).strip()
-
