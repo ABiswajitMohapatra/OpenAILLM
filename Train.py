@@ -64,18 +64,18 @@ def summarize_messages(messages):
 def rag_retrieve(query: str) -> list[str]:
     return []
 
-# --- Chat agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
+    
     if extra_file_content:
         context += f"\nAdditional context:\n{extra_file_content}"
 
     rag_context = "\n".join(rag_retrieve(query))
     full_context = context + "\n" + rag_context if rag_context else context
 
-    # Summarize older conversation if needed
+    # Keep only text in conversation, remove emojis
     if len(chat_history) > memory_limit:
         old_msgs = chat_history[:-memory_limit]
         recent_msgs = chat_history[-memory_limit:]
@@ -86,22 +86,27 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text = ""
 
     for msg in recent_msgs:
-        role_emoji = "⚛" if msg['role'] == "Agent" else "🧑‍🔬"
-        conversation_text += f"{role_emoji}: {msg['message']}\n"
-    conversation_text += f"🧑‍🔬: {query}\n"
+        role_text = msg['message']
+        conversation_text += f"{role_text}\n"
+
+    # Only user text for last query
+    conversation_text += f"{query}\n"
 
     prompt = (
         f"Context: {full_context}\n"
         f"Conversation:\n{conversation_text}\n"
         "Instructions for AI:\n"
         "1. Respond only once using ⚛ emoji.\n"
-        "2. For factual queries, give concise, direct answers.\n"
-        "3. For conceptual, technical, or coding queries, provide structured answers with headings, bullets, examples, and full working code if applicable.\n"
-        "4. Do NOT include the user's emoji or role inside your response.\n"
-        "5. Avoid repeated prefixes or unnecessary text.\n"
+        "2. Do NOT include user emojis or repeat user text.\n"
+        "3. Short/factual queries → concise answers.\n"
+        "4. Conceptual/technical/code queries → structured answers with headings, bullets, examples, full working code if applicable.\n"
+        "5. Avoid repeating prefixes or unnecessary text.\n"
         "6. Only answer the last user query.\n"
     )
-    return query_openai_api(prompt)
+
+    answer = query_openai_api(prompt)
+    # Add AI emoji manually at the start
+    return f"⚛ {answer.strip()}"
 
 
 # --- PDF text extraction ---
@@ -116,4 +121,5 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image).strip()
+
 
