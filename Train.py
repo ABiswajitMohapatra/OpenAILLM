@@ -71,7 +71,6 @@ def summarize_messages(messages):
 # --- Stub RAG retrieval ---
 def rag_retrieve(query: str) -> list[str]:
     return []
-
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -97,22 +96,21 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- Determine response detail level ---
-    if len(query.split()) <= 4:
-        response_style = "Provide a short and concise answer."
-    else:
-        response_style = (
-            "Provide a detailed, structured answer with headings, subheadings, examples, "
-            "and context like BiswaLex AI. Explain concepts clearly and give real-world examples."
-        )
-
+    # --- Adaptive response instruction ---
+    # Ask the model to generate responses based on query complexity
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        f"Instruction for AI: {response_style}"
+        "Instruction for AI: Analyze the user's query carefully. "
+        "If it is asking for a factual answer or abbreviation, give a short and precise response. "
+        "If it is asking for an explanation, concept, or technical topic, give a detailed, structured, and clear answer "
+        "with headings, subheadings, examples, and context when necessary. "
+        "Always prioritize relevance and clarity over length. "
+        "Provide the best possible answer for the user's query."
     )
 
     return query_openai_api(prompt)
+
 
 # --- PDF text extraction ---
 def extract_text_from_pdf(file):
