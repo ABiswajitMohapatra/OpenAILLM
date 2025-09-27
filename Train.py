@@ -63,7 +63,6 @@ def summarize_messages(messages):
 # --- RAG retrieval stub ---
 def rag_retrieve(query: str) -> list[str]:
     return []
-
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -89,14 +88,23 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
+    # --- Determine response detail level ---
+    if len(query.split()) <= 4:
+        response_style = "Provide a short and concise answer."
+    else:
+        response_style = (
+            "Provide a detailed, structured answer with headings, subheadings, examples, "
+            "and context like BiswaLex AI. Explain concepts clearly and give real-world examples."
+        )
+
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context."
+        f"Instruction for AI: {response_style}"
     )
 
-    # ✅ Use OpenAI API, not Groq
     return query_openai_api(prompt)
+
 
 # --- PDF text extraction ---
 def extract_text_from_pdf(file):
@@ -110,6 +118,7 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image).strip()
+
 
 
 
