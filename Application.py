@@ -5,6 +5,7 @@ import time
 
 st.set_page_config(page_title="BiswaLLM", page_icon="⚛", layout="wide")
 
+# --- Initialize session states ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
 if 'sessions' not in st.session_state:
@@ -12,6 +13,7 @@ if 'sessions' not in st.session_state:
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
+# --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
 div.message { margin: 2px 0; font-size: 17px; }
@@ -22,6 +24,7 @@ div[data-testid="stHorizontalBlock"] { margin-bottom: 0px; padding-bottom: 0px; 
 </style>
 """, unsafe_allow_html=True)
 
+# --- Sidebar ---
 st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
@@ -32,6 +35,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
+# --- PDF upload handling ---
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     extracted_text = ""
@@ -40,9 +44,11 @@ if uploaded_file and "uploaded_pdf_text" not in st.session_state:
             extracted_text += page.extract_text() or ""
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
+# --- Helper to add messages to session ---
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
+# --- Custom responses ---
 CUSTOM_RESPONSES = {
     "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
@@ -59,16 +65,19 @@ def check_custom_response(user_input: str):
             return response
     return None
 
+# --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
+# --- Static header above chat ---
 if 'header_rendered' not in st.session_state:
     st.markdown("<div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>What can I help with?😊</div>", unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
+# --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
@@ -83,7 +92,7 @@ if prompt:
 
         if st.session_state.uploaded_pdf_text:
             final_answer = chat_with_agent(
-                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
+                f"Please provide a detailed summary with headings of this document:\n\n{st.session_state.uploaded_pdf_text}",
                 st.session_state.index,
                 st.session_state.current_session
             )
@@ -94,6 +103,7 @@ if prompt:
             prompt, st.session_state.index, st.session_state.current_session
         )
 
+    # --- Typewriter effect ---
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
@@ -101,10 +111,9 @@ if prompt:
 
     add_message("Agent", final_answer)
 
+# --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
 st.sidebar.markdown("<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>", unsafe_allow_html=True)
-
-
