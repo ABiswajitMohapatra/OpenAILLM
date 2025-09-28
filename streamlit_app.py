@@ -5,19 +5,15 @@ from agent.planner import PlannerAgent
 from agent.architect import ArchitectAgent
 from agent.coder import CoderAgent
 
-# Get API key from Streamlit Cloud Secrets
 api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
 
 st.set_page_config(page_title="Coder Buddy", page_icon="⚡", layout="wide")
 st.title("🤖 Coder Buddy - AI Project Generator")
 
 if not api_key:
-    st.error("❌ OPENAI_API_KEY not found. Please set it in Streamlit Cloud Secrets.")
+    st.error("❌ OPENAI_API_KEY not found. Please set it in Streamlit Secrets.")
 else:
-    user_request = st.text_area(
-        "Enter your project request",
-        "Create a to-do list app using HTML, CSS, and JavaScript"
-    )
+    user_request = st.text_area("Enter your project request", "Create a to-do list app using HTML, CSS, and JavaScript")
 
     if st.button("Generate Project"):
         planner = PlannerAgent(api_key)
@@ -39,7 +35,18 @@ else:
                 breakdown = []
 
         if breakdown:
-            with st.spinner("📌 Writing code files..."):
-                result = coder.implement(breakdown)
+            with st.spinner("📌 Generating full webpage code..."):
+                generated_files = coder.implement(breakdown, plan)
+
             st.success("✅ Project created successfully!")
-            st.text(result)
+            for f in generated_files:
+                st.subheader(f"📄 {f['filename']}")
+                st.code(f['content'], language=f['filename'].split('.')[-1])
+
+            # Optional: allow user to download as zip
+            import io, zipfile
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zf:
+                for f in generated_files:
+                    zf.writestr(f['filename'], f['content'])
+            st.download_button("📥 Download All Files", zip_buffer.getvalue(), "project.zip")
