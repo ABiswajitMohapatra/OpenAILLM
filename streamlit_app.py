@@ -50,7 +50,6 @@ project_prompt = st.chat_input(
 if not api_key:
     st.error("❌ OPENAI_API_KEY not found. Please set in Streamlit Secrets.")
 elif project_prompt:
-    # Add user input to conversation
     st.session_state.messages.append({"role": "user", "content": project_prompt})
 
     planner = PlannerAgent(api_key)
@@ -75,27 +74,30 @@ elif project_prompt:
                 breakdown_dict = []
 
         if breakdown_dict:
-            with st.spinner("📄 Generating full code..."):
-                generated_files = coder.implement(breakdown_dict, plan)
-            st.session_state.messages.append({"role": "assistant", "files": generated_files})
-            st.success("✅ Project created!")
-            for f in generated_files:
-                with st.expander(f"📄 {f['filename']}"):
-                    st.code(f['content'], language=f['filename'].split('.')[-1])
+            generated_files = []
+            with st.spinner("📄 Generating files one by one..."):
+                for i, part in enumerate(breakdown_dict):
+                    file = coder.implement([part], plan)[0]
+                    generated_files.append(file)
 
-            # Download as zip
+                    st.session_state.messages.append({"role": "assistant", "files": [file]})
+                    st.success(f"✅ Generated: {file['filename']}")
+                    with st.expander(f"📄 {file['filename']}"):
+                        st.code(file['content'], language=file['filename'].split('.')[-1])
+
+                    # Show per file search link
+                    search_query = urllib.parse.quote(project_prompt + " " + file['filename'])
+                    search_url = f"https://www.google.com/search?q={search_query}"
+                    st.markdown(f"🔗 Explore this file idea: [Search Google]({search_url})", unsafe_allow_html=True)
+
+            # Download all files as zip after all generated
             import io, zipfile
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zf:
                 for f in generated_files:
                     zf.writestr(f['filename'], f['content'])
-            st.download_button(
-                "📥 Download All Files", zip_buffer.getvalue(), "project.zip"
-            )
 
-            # New: Show clickable link to explore project idea on Google
-            search_query = urllib.parse.quote(project_prompt)
-            search_url = f"https://www.google.com/search?q={search_query}"
-            st.markdown(f"### 🔗 Explore your project idea further: [Click here to search Google]({search_url})", unsafe_allow_html=True)
+            st.download_button("📥 Download All Files", zip_buffer.getvalue(), "project.zip")
 
-    st.balloons()
+            # Balloon celebration after all files
+            st.balloons()
