@@ -1,6 +1,6 @@
-from langchain_openai import ChatOpenAI
 import json
 import re
+from langchain_openai import ChatOpenAI
 
 class ArchitectAgent:
     def __init__(self, api_key):
@@ -10,7 +10,7 @@ class ArchitectAgent:
         prompt = f"""
         You are an architect. Break down the project plan into tasks for each file.
         Return output in strict JSON format only — a list of objects with "filename" and "task".
-        Do NOT add any explanation or text outside of JSON.
+        Do NOT add any explanation, text, or code block (no ```json).
         
         Example format:
         [
@@ -32,16 +32,18 @@ class ArchitectAgent:
         {project_plan}
         """
 
-        # Get response from LLM
         response = self.llm.invoke(prompt).content
 
-        # Extract JSON using regex in case the LLM adds extra text
+        # Remove code block backticks if present
+        response = re.sub(r"```.*?```", "", response, flags=re.DOTALL).strip()
+
+        # Extract JSON array using regex
         json_match = re.search(r'(\[.*\])', response, re.DOTALL)
         if json_match:
             try:
                 breakdown_json = json.loads(json_match.group(1))
                 return breakdown_json
-            except json.JSONDecodeError:
-                raise ValueError("LLM returned invalid JSON")
+            except json.JSONDecodeError as e:
+                raise ValueError(f"LLM returned invalid JSON: {e}")
         else:
             raise ValueError("LLM output does not contain valid JSON")
