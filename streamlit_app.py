@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+import json
 from agent.planner import PlannerAgent
 from agent.architect import ArchitectAgent
 from agent.coder import CoderAgent
@@ -29,11 +30,16 @@ else:
         st.write(plan)
 
         with st.spinner("📌 Breaking down into files..."):
-            breakdown = architect.design(plan)
-        st.subheader("📂 File Breakdown")
-        st.code(breakdown, language="json")
+            try:
+                breakdown = architect.design(plan)
+                st.subheader("📂 File Breakdown")
+                st.code(json.dumps(breakdown, indent=2), language="json")
+            except ValueError as e:
+                st.error(f"❌ Architect output is not valid JSON: {e}")
+                breakdown = []
 
-        with st.spinner("📌 Writing code files..."):
-            result = coder.implement(breakdown)
-        st.success("✅ Project created successfully!")
-        st.text(result)
+        if breakdown:
+            with st.spinner("📌 Writing code files..."):
+                result = coder.implement(breakdown)
+            st.success("✅ Project created successfully!")
+            st.text(result)
