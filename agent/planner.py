@@ -1,9 +1,15 @@
-from langchain_openai import ChatOpenAI
-
 class PlannerAgent:
     def __init__(self, api_key):
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=api_key)
+        self.api_key = api_key
 
-    def plan(self, request: str):
-        prompt = f"You are a planner. Create a detailed project plan for: {request}"
-        return self.llm.invoke(prompt).content
+    def plan(self, user_request: str):
+        # Simple placeholder plan
+        return f"""Project Plan: {user_request}
+
+Objective: Build a simple, user-friendly application.
+Technologies: HTML, CSS, JavaScript
+Phases:
+1. Planning and Design
+2. Development
+3. Deployment
+4. Documentation and Feedback"""
