@@ -13,7 +13,7 @@ st.title("🤖 Coder Buddy - AI Project Generator")
 if not api_key:
     st.error("❌ OPENAI_API_KEY not found. Please set it in Streamlit Secrets.")
 else:
-    user_request = st.text_area("Enter your project request", height=60)
+    user_request = st.text_area("Enter your project request", height=90)
 
     if st.button("Generate Project"):
         planner = PlannerAgent(api_key)
@@ -50,6 +50,7 @@ else:
                 for f in generated_files:
                     zf.writestr(f['filename'], f['content'])
             st.download_button("📥 Download All Files", zip_buffer.getvalue(), "project.zip")
+
 
 
 
