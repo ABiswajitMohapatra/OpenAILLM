@@ -10,7 +10,7 @@ class ArchitectAgent:
         prompt = f"""
         You are an architect. Break down the project plan into tasks for each file.
         Return output in strict JSON format only — a list of objects with "filename" and "task".
-        Do NOT add any explanation, text, or code block (no ```json).
+        Do NOT include explanations or code blocks (no ```json or ```).
         
         Example format:
         [
@@ -34,10 +34,13 @@ class ArchitectAgent:
 
         response = self.llm.invoke(prompt).content
 
-        # Remove code block backticks if present
+        # Remove code block markers if present
         response = re.sub(r"```.*?```", "", response, flags=re.DOTALL).strip()
 
-        # Extract JSON array using regex
+        # Decode escaped newlines and quotes if returned as string
+        response = response.encode('utf-8').decode('unicode_escape')
+
+        # Extract JSON array
         json_match = re.search(r'(\[.*\])', response, re.DOTALL)
         if json_match:
             try:
