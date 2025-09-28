@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import json
+import urllib.parse
 
 from agent.planner import PlannerAgent
 from agent.architect import ArchitectAgent
@@ -91,4 +92,10 @@ elif project_prompt:
             st.download_button(
                 "📥 Download All Files", zip_buffer.getvalue(), "project.zip"
             )
+
+            # New: Show clickable link to explore project idea on Google
+            search_query = urllib.parse.quote(project_prompt)
+            search_url = f"https://www.google.com/search?q={search_query}"
+            st.markdown(f"### 🔗 Explore your project idea further: [Click here to search Google]({search_url})", unsafe_allow_html=True)
+
     st.balloons()
