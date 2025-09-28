@@ -3,10 +3,9 @@ class PlannerAgent:
         self.api_key = api_key
 
     def plan(self, user_request: str):
-        # Simple placeholder plan
         return f"""Project Plan: {user_request}
 
-Objective: Build a simple, user-friendly application.
+Objective: Build a fully functional, user-friendly application.
 Technologies: HTML, CSS, JavaScript
 Phases:
 1. Planning and Design
