@@ -73,31 +73,32 @@ elif project_prompt:
                 st.error(f"❌ Architect output is not valid JSON: {e}")
                 breakdown_dict = []
 
-        if breakdown_dict:
-            generated_files = []
-            with st.spinner("📄 Generating files one by one..."):
-                for i, part in enumerate(breakdown_dict):
-                    file = coder.implement([part], plan)[0]
-                    generated_files.append(file)
+       if breakdown_dict:
+    generated_files = []
+    with st.spinner("📄 Generating files one by one..."):
+        for part in breakdown_dict:
+            file = coder.implement([part], plan)[0]
+            generated_files.append(file)
 
-                    st.session_state.messages.append({"role": "assistant", "files": [file]})
-                    st.success(f"✅ Generated: {file['filename']}")
-                    with st.expander(f"📄 {file['filename']}"):
-                        st.code(file['content'], language=file['filename'].split('.')[-1])
+            st.session_state.messages.append({"role": "assistant", "files": [file]})
+            with st.expander(f"📄 {file['filename']}"):
+                st.code(file['content'], language=file['filename'].split('.')[-1])
 
-                    # Show per file search link
-                    search_query = urllib.parse.quote(project_prompt + " " + file['filename'])
-                    search_url = f"https://www.google.com/search?q={search_query}"
-                    st.markdown(f"🔗 Explore this file idea: [Search Google]({search_url})", unsafe_allow_html=True)
+    # Show search link only once after all files
+    search_query = urllib.parse.quote(project_prompt)
+    search_url = f"https://www.google.com/search?q={search_query}"
+    st.markdown(f"### 🔗 Explore your project idea further: [Click here to search Google]({search_url})", unsafe_allow_html=True)
 
-            # Download all files as zip after all generated
-            import io, zipfile
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w") as zf:
-                for f in generated_files:
-                    zf.writestr(f['filename'], f['content'])
+    # Download zip of all files
+    import io, zipfile
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as zf:
+        for f in generated_files:
+            zf.writestr(f['filename'], f['content'])
 
-            st.download_button("📥 Download All Files", zip_buffer.getvalue(), "project.zip")
+    st.download_button("📥 Download All Files", zip_buffer.getvalue(), "project.zip")
 
-            # Balloon celebration after all files
-            st.balloons()
+    # Balloons at the end
+    st.balloons()
+
+
