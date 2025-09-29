@@ -2,6 +2,10 @@ import os
 import streamlit as st
 import json
 import urllib.parse
+import threading
+import http.server
+import socketserver
+import webbrowser
 import io
 import zipfile
 
@@ -9,7 +13,7 @@ from agent.planner import PlannerAgent
 from agent.architect import ArchitectAgent
 from agent.coder import CoderAgent
 
-# Get API key from Streamlit Secrets or environment
+# Get API key from secrets or environment
 api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
 
 st.set_page_config(page_title="Coder Buddy Live Web Builder", page_icon="⚡", layout="wide")
@@ -55,6 +59,13 @@ def save_generated_files(files, project_name):
             fp.write(f['content'])
     return os.path.abspath(project_name)
 
+def serve_website(folder_path, port=8000):
+    os.chdir(folder_path)
+    handler = http.server.SimpleHTTPRequestHandler
+    httpd = socketserver.TCPServer(("", port), handler)
+    threading.Thread(target=lambda: webbrowser.open(f"http://localhost:{port}")).start()
+    httpd.serve_forever()
+
 # ----------------- Main logic -----------------
 if not api_key:
     st.error("❌ OPENAI_API_KEY not found. Please set in Streamlit Secrets.")
@@ -95,20 +106,19 @@ elif project_prompt:
                     with st.expander(f"📄 {file['filename']}"):
                         st.code(file['content'], language=file['filename'].split('.')[-1])
 
-            # Save files locally in container
+            # Save files and serve website
             project_folder = save_generated_files(generated_files, "coder_buddy_site")
             st.success(f"✅ Website generated at {project_folder}")
 
-            # Create zip for download
+            threading.Thread(target=lambda: serve_website(project_folder)).start()
+            st.info("🌐 Your website is being opened in a new browser tab!")
+
+            # Download zip of all files
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zf:
                 for f in generated_files:
                     zf.writestr(f['filename'], f['content'])
             st.download_button("📥 Download All Files", zip_buffer.getvalue(), "project.zip")
-
-            # Provide clickable link to homepage (user needs to run locally)
-            index_path = os.path.join(project_folder, "index.html")
-            st.markdown(f"🌐 Open your website locally: [Click here](file://{index_path})", unsafe_allow_html=True)
 
             # Balloons for celebration
             st.balloons()
