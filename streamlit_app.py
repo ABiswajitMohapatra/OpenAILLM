@@ -1,15 +1,15 @@
 import os
 import streamlit as st
 import json
+import urllib.parse
 import io
 import zipfile
-from streamlit.components.v1 import html
 
 from agent.planner import PlannerAgent
 from agent.architect import ArchitectAgent
 from agent.coder import CoderAgent
 
-# Get API key from secrets or environment
+# Get API key from Streamlit Secrets or environment
 api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
 
 st.set_page_config(page_title="Coder Buddy Live Web Builder", page_icon="⚡", layout="wide")
@@ -95,24 +95,20 @@ elif project_prompt:
                     with st.expander(f"📄 {file['filename']}"):
                         st.code(file['content'], language=file['filename'].split('.')[-1])
 
-            # Save files
+            # Save files locally in container
             project_folder = save_generated_files(generated_files, "coder_buddy_site")
-            st.success(f"✅ Website generated at `{project_folder}`")
+            st.success(f"✅ Website generated at {project_folder}")
 
-            # ---------------- Live Preview ----------------
-            if any(f['filename'].endswith(".html") for f in generated_files):
-                index_file = next((f for f in generated_files if f['filename'].endswith("index.html")), None)
-                if index_file:
-                    st.markdown("### 🌐 Live Preview of your website:")
-                    st.info("Scroll within the box to see your website live!")
-                    html(index_file['content'], height=600, scrolling=True)
-
-            # Download zip of all files
+            # Create zip for download
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zf:
                 for f in generated_files:
                     zf.writestr(f['filename'], f['content'])
             st.download_button("📥 Download All Files", zip_buffer.getvalue(), "project.zip")
+
+            # Provide clickable link to homepage (user needs to run locally)
+            index_path = os.path.join(project_folder, "index.html")
+            st.markdown(f"🌐 Open your website locally: [Click here](file://{index_path})", unsafe_allow_html=True)
 
             # Balloons for celebration
             st.balloons()
